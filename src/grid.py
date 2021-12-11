@@ -1,15 +1,16 @@
 import random
 import pygame as pg
-from src.globals import WINDOW_SIZE
+from src.constants import WINDOW_SIZE
 from src.block import Block, SolidBlock, ExplodableBlock, BackgroundBlock
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
 class Tile:
     x: int
     y: int
-    obj: Block
+    obj: Any
     layer: str
 
 
@@ -25,6 +26,23 @@ class Grid:
         self.spawn_solids()
         self.spawn_explodables()
 
+    def remove_tile(self, x: int, y: int, layer: str):
+        self.tiles = [
+            tile
+            for tile in self.tiles
+            if tile.x != x and tile.y != y and tile.layer != layer
+        ]
+
+    def remove_tile_by_obj(self, obj: Any):
+        self.tiles = [tile for tile in self.tiles if tile.obj != obj]
+
+    def add_tile(self, x: int, y: int, layer: str, obj: Any):
+        obj_size = obj.rect.width
+        obj.rect.x = x * self.size + (self.size - obj_size) / 2
+        obj.rect.y = y * self.size + (self.size - obj_size) / 2
+
+        self.tiles.append(Tile(x, y, obj, layer))
+
     def get_tiles(self, layer: str):
         return [tile for tile in self.tiles if tile.layer == layer]
 
@@ -32,6 +50,12 @@ class Grid:
         for tile in self.tiles:
             if tile.x == x and tile.y == y and tile.layer == layer:
                 return tile
+
+    def get_cell_world_pos(self, x: int, y: int):
+        return (x / self.size, y / self.size)
+
+    def get_world_cell_pos(self, x: int, y: int):
+        return (x * self.size, y * self.size)
 
     def spawn_background(self):
         for i in range(self.x):
@@ -70,3 +94,8 @@ class Grid:
     def render(self, target: pg.Surface):
         for tile in self.tiles:
             tile.obj.render(target)
+
+    def update(self):
+        for tile in self.tiles:
+            if hasattr(tile.obj, "update"):
+                tile.obj.update()

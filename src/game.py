@@ -1,5 +1,6 @@
 import pygame as pg
-from src.globals import FPS, WINDOW_SIZE
+from src.constants import FPS, WINDOW_SIZE
+from src.state_manager import STATE
 from src.colors import Colors
 from src.player import Player
 from src.grid import Grid
@@ -14,7 +15,6 @@ class Game:
         self.is_running = True
         self.window = pg.display.set_mode(WINDOW_SIZE)
         self.player = Player()
-        self.grid = Grid(17, 13, 64)
 
     def poll_events(self):
         for event in pg.event.get():
@@ -22,7 +22,7 @@ class Game:
                 self.is_running = False
 
     def check_collisions(self):
-        if self.player.get_fake_rect().collidelist([tile.obj.rect for tile in self.grid.get_tiles("structures")]) > -1:
+        if self.player.get_fake_rect().collidelist([tile.obj.rect for tile in STATE.grid.get_tiles("structures")]) > -1:
             last_move = self.player.last_move
         
             if last_move == "right":
@@ -37,10 +37,10 @@ class Game:
     def render(self):
         self.window.fill(Colors.BLACK)
 
-        self.grid.render(self.window)
+        STATE.grid.render(self.window)
         self.player.render(self.window)
 
-        pg.draw.rect(self.window, Colors.RED, self.player.get_fake_rect())
+        # pg.draw.rect(self.window, Colors.RED, self.player.get_fake_rect())
 
         pg.display.flip()
 
@@ -49,6 +49,7 @@ class Game:
     def update(self):
         self.poll_events()
 
+        STATE.grid.update()
         self.player.update()
 
         self.check_collisions()

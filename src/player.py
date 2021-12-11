@@ -1,4 +1,7 @@
+import math
 import pygame as pg
+from src.bomb import Bomb
+from src.state_manager import STATE
 
 
 class Player:
@@ -8,16 +11,18 @@ class Player:
         self.rect = self.sprite.image.get_rect()
 
         self.speed = 5
+        self.bombs_limit = 3
+        self.bombs = []
 
         self.last_move = None
 
     def get_fake_rect(self):
         rc = self.rect.copy()
-        rc.height = 48
-        rc.width = 48
+        rc.height = 32
+        rc.width = 32
 
-        rc.y = rc.y + rc.height * 1.5
-        rc.x = rc.x + rc.width / 5
+        rc.x = rc.x + (self.rect.w - rc.w) / 2
+        rc.y = rc.y + self.rect.h - rc.h
 
         return rc
 
@@ -25,6 +30,14 @@ class Player:
         target.blit(self.sprite.image, self.rect)
 
     def update(self):
+        bombs_to_remove = []
+
+        for i, (bomb_x, bomb_y) in enumerate(self.bombs):
+            if not STATE.grid.get_tile(bomb_x, bomb_y, "bombs"):
+                bombs_to_remove.append(i)
+
+        self.bombs = [bomb for i, bomb in enumerate(self.bombs) if i not in bombs_to_remove]
+
         key_pressed = pg.key.get_pressed()
 
         if key_pressed[pg.K_d]:
@@ -39,4 +52,13 @@ class Player:
         elif key_pressed[pg.K_w]:
             self.rect.move_ip(0, -self.speed)
             self.last_move = "up"
-            
+
+        if key_pressed[pg.K_SPACE]:
+            if len(self.bombs) < self.bombs_limit:
+                x, y = STATE.grid.get_cell_world_pos(self.rect.x + self.rect.width / 2, self.rect.y + self.rect.height / 2)
+                x = math.floor(x)
+                y = round(y)
+                if (x, y) not in self.bombs:
+                    STATE.grid.add_tile(x, y, "bombs", Bomb(x, y))
+
+                    self.bombs.append((x, y))
